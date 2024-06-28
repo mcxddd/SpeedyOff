@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QDialog, QFileDialog, QVBoxLayout, QPushButton, QLabel
-from modules.import_module import DataManager
+from modules.data_manager_module import DataManagerModule
 
 class ImportDialog(QDialog):
     def __init__(self, data_manager, parent=None):
