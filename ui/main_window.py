@@ -28,6 +28,5 @@ class MainWindow(QMainWindow):
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(tabWidget)
         centralWidget.setLayout(mainLayout)
-        print("Main window OK")
 
         self.show()

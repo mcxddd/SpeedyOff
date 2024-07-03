@@ -22,20 +22,4 @@ class Encryption(QWidget):
         mainLayout.addSpacerItem(QSpacerItem(
             20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
-        # 创建一个水平布局，包含版权信息和联系人方式
-        bottomLayout = QVBoxLayout()
-
-        copyrightLabel = QLabel('© 2024 SpeedyOff All Rights Reserved')
-        copyrightLabel.setAlignment(Qt.AlignRight)
-        bottomLayout.addWidget(copyrightLabel)
-
-        contactLabel = QLabel('Contact us: support@speedyoff.com')
-        contactLabel.setAlignment(Qt.AlignRight)
-        bottomLayout.addWidget(contactLabel)
-
-        # 将水平布局添加到主布局的底部
-        mainLayout.addLayout(bottomLayout)
-
-        print("HomeTab OK")
-
         self.setLayout(mainLayout)
