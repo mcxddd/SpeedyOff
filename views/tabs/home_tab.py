@@ -10,7 +10,8 @@ class HomeTab(QWidget):
     def initUI(self):
         mainLayout = QVBoxLayout()
 
-        welcomeLabel = QLabel('Welcome to SpeedyOff')
+        welcomeLabel = QLabel()
+        welcomeLabel.setText("欢迎来到SpeedyOff")
         welcomeLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(welcomeLabel)
 

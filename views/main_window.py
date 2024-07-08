@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTabWidget, QVBoxLayout
-from ui.tabs.home_tab import HomeTab
-from ui.tabs.encryption_tab import Encryption
+from views.tabs.home_tab import HomeTab
+from views.tabs.encryption_tab import Encryption
 
 
 class MainWindow(QMainWindow):
