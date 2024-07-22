@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QTabWidget, QVBoxLayout
+from PyQt5.QtWidgets import QMainWindow, QWidget, QTabWidget, QVBoxLayout, QMessageBox
 from views.tabs.home_tab import HomeTab
-from views.tabs.encryption_tab import Encryption
+from views.tabs.encryption_tab import EncryptionTab
 
 
 class MainWindow(QMainWindow):
@@ -18,15 +18,26 @@ class MainWindow(QMainWindow):
         # 创建中心部件和标签页部件
         centralWidget = QWidget()
         self.setCentralWidget(centralWidget)
-        tabWidget = QTabWidget()
+        self.tabWidget = QTabWidget()
 
         # 创建标签页
-        tabWidget.addTab(HomeTab(), "主页")
-        tabWidget.addTab(Encryption(), "加密/解密")
+        self.home_tab = HomeTab()
+        self.encryption_tab = EncryptionTab()
+        self.tabWidget.addTab(self.home_tab, "主页")
+        self.tabWidget.addTab(self.encryption_tab, "加密/解密")
 
         # 创建主布局
         mainLayout = QVBoxLayout()
-        mainLayout.addWidget(tabWidget)
+        mainLayout.addWidget(self.tabWidget)
         centralWidget.setLayout(mainLayout)
 
         self.show()
+
+    def get_home_tab(self):
+        return self.home_tab
+
+    def get_encryption_tab(self):
+        return self.encryption_tab
+
+    def display_error(self, message):
+        QMessageBox.critical(self, "Error", message)

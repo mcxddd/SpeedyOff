@@ -1,44 +1,132 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFileDialog, QSizePolicy, QHBoxLayout, QPushButton
-from PyQt5.QtCore import Qt
-from controllers.encryption_controller import EncryptionController
-from controllers.data_controller import DataController
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFileDialog, QSpacerItem, QSizePolicy, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QMessageBox, QCheckBox
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 
 
-class Encryption(QWidget):
+class EncryptionTab(QWidget):
+    file_upload_requested = pyqtSignal(str)
+    encrypt_decrypt_requested = pyqtSignal(dict)
+
     def __init__(self):
         super().__init__()
-        self.dataController = DataController(self.model)
-        self.encryptionController = EncryptionController(
-            self.dataController.get_data(), 'SM4')
-        self.initUI()
+        self._initUI()
+        self.file_name = None
 
-    def initUI(self):
-        mainVLayout = QVBoxLayout()
+    def _initUI(self):
+        self.mainVLayout = QVBoxLayout()
 
-        importRowLayout = QHBoxLayout()
-
-        welcomeLabel = QLabel('Import your file.')
-        welcomeLabel.setAlignment(Qt.AlignCenter)
+        self.welcomeLabel = QLabel('Import your file.')
+        self.welcomeLabel.setAlignment(Qt.AlignCenter)
         self.importButton = QPushButton("Choose")
-        # importButton.setAlignment(Qt.AlignRight)
-        self.importButton.clicked.connect(self.upload_file)
+        self.importButton.clicked.connect(self.open_file_dialog)
 
-        importRowLayout.addWidget(welcomeLabel)
-        importRowLayout.addWidget(self.importButton)
+        self.importRowLayout = QHBoxLayout()
+        self.importRowLayout.addWidget(self.welcomeLabel)
+        self.importRowLayout.addWidget(self.importButton)
+        self.mainVLayout.addLayout(self.importRowLayout)
 
-        mainVLayout.addLayout(importRowLayout)
-        mainVLayout.addStretch(1)
+        self.uploadfileInfo = QLabel('Not selected yet.')
+        self.uploadfileInfo.setAlignment(Qt.AlignRight)
+        self.mainVLayout.addWidget(self.uploadfileInfo)
 
-        self.setLayout(mainVLayout)
+        self.indicesRowLayout = QHBoxLayout()
+        self.column_indices_input = QLineEdit()
+        self.column_indices_input.setPlaceholderText(
+            'Enter column indices (e.g., 0,2,4)')
+        self.include_all_columns = QCheckBox(
+            'Include all columns')
+        self.indicesRowLayout.addWidget(self.column_indices_input)
+        self.indicesRowLayout.addWidget(self.include_all_columns)
+        self.mainVLayout.addLayout(self.indicesRowLayout)
 
-    def upload_file(self):
-        file_path = self.file_path_edit.text()
-        if file_path:
+        self.algorithm_selector = QComboBox()
+        self.algorithm_selector.addItems(["SHA256", "MD5", "SM4"])
+        self.algorithm_selector.currentIndexChanged.connect(
+            self.toggle_sm4_mode_selector)
+
+        spacer = QSpacerItem(
+            40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItems(["Encrypt", "Decrypt"])
+        self.mode_selector.setFixedWidth(250)
+        self.mode_selector.setVisible(False)
+
+        self.algorithmRowLayout = QHBoxLayout()
+        self.algorithmRowLayout.addWidget(self.algorithm_selector)
+        self.algorithmRowLayout.addItem(spacer)
+        self.algorithmRowLayout.addWidget(self.mode_selector)
+
+        self.mainVLayout.addLayout(self.algorithmRowLayout)
+        self.mainVLayout.addStretch(1)
+        self.encrypt_button = QPushButton('Encrypt/Decrypt File')
+        self.encrypt_button.clicked.connect(self.request_encryption_decryption)
+
+        self.encryptionRowLayout = QHBoxLayout()
+        self.encryptionRowLayout.addStretch(1)
+        self.encryptionRowLayout.addWidget(self.encrypt_button)
+
+        self.mainVLayout.addLayout(self.encryptionRowLayout)
+        self.setLayout(self.mainVLayout)
+
+    def open_file_dialog(self):
+        print("Open file dialog")
+        options = QFileDialog.Options()
+        file_filter = "CSV Files (*.csv);;Excel Files (*.xlsx *.xls)"
+        self.file_path, file_type = QFileDialog.getOpenFileName(
+            self, "Open File", "", file_filter, options=options)
+        if self.file_path:
+            # Get the file name from the file path
+            self.file_upload_requested.emit(self.file_path)
+
+    def request_encryption_decryption(self):
+        column_indices_text = self.column_indices_input.text().strip()
+        include_all = self.include_all_columns.isChecked()
+        selected_algorithm = self.algorithm_selector.currentText()
+        selected_mode = self.mode_selector.currentText()
+
+        if not column_indices_text and not include_all:
+            QMessageBox.warning(
+                self, 'Missing Values', 'Please enter column indices or check the nclude all columns to the right option.')
+            return
+
+        column_indices = []
+        if column_indices_text:
             try:
-                self.DataController.load_csv(file_path)
-                data = self.data_controller.get_data()
-                if not data.empty:
-                    self.displayData(data)
-                    self.column_select.addItems(data.columns)
-            except ValueError as e:
-                self.showError(str(e))
+                column_indices = list(map(int, column_indices_text.split(',')))
+            except ValueError:
+                QMessageBox.warning(
+                    self, "Invalid Input", "Please enter valid column indices (e.g., 0,2,4).")
+                return
+        if not self.file_name:
+            QMessageBox.warning(
+                self, "Missing File", "Please upload a file before requesting encryption.")
+            return
+        data = {
+            'file_path': self.file_path,
+            'column_indices': column_indices,
+            'include_all': include_all,
+            'selected_algorithm': selected_algorithm,
+            'selected_mode': selected_mode,
+        }
+        self.encrypt_decrypt_requested.emit(data)
+
+    @pyqtSlot(str)
+    def update_file_info(self, file_name):
+        self.uploadfileInfo.setText(f'Selected file: {file_name}')
+
+    def toggle_sm4_mode_selector(self):
+        if self.algorithm_selector.currentText() == "SM4":
+            self.mode_selector.setVisible(True)
+        else:
+            self.mode_selector.setVisible(False)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.adjust_combobox_lengths()
+
+    def adjust_combobox_lengths(self):
+        parent_width = self.algorithmRowLayout.geometry().width()
+        algorithm_selector_width = parent_width * 0.75
+        sm4_mode_selector_width = parent_width * 0.25
+        self.algorithm_selector.setFixedWidth(algorithm_selector_width)
+        self.mode_selector.setFixedWidth(sm4_mode_selector_width)
