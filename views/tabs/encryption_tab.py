@@ -80,7 +80,7 @@ class EncryptionTab(QWidget):
         print('Opening file dialog')
         options = QFileDialog.Options()
         file_filter = "CSV Files (*.csv);;Excel Files (*.xlsx *.xls)"
-        self.file_path, file_type = QFileDialog.getOpenFileName(
+        self.file_path, _ = QFileDialog.getOpenFileName(
             self, "Open File", "", file_filter, options=options)
         if self.file_path:
             # Get the file name from the file path
