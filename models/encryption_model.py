@@ -2,7 +2,6 @@ import pandas as pd
 import hashlib
 from gmssl import sm4
 import base64
-import binascii
 
 
 class EncryptionModel:
