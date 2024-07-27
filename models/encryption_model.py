@@ -1,6 +1,8 @@
 import pandas as pd
 import hashlib
 from gmssl import sm4
+import base64
+import binascii
 
 
 class EncryptionModel:
@@ -8,9 +10,8 @@ class EncryptionModel:
         self.data = None
         self.file_name = None
         self.folder_path = None
-        self.algorithm = None
-        self.sm4_key = None
-        self.sm4_crypto = None
+        self.selected_algorithm = None
+        self.encryption_instance = None
 
     def get_data(self):
         return self.data
@@ -18,52 +19,120 @@ class EncryptionModel:
     def set_data(self, data):
         self.data = data
 
+    def get_file_name(self):
+        return self.file_name
+
     def load_file(self, file_path):
         if file_path.endswith('.csv'):
             self.data = pd.read_csv(file_path)
         else:
             self.data = pd.read_excel(file_path)
-            # Update the model with the file content
-            self.file_name = file_path.split("/")[-1]
-            self.folder_path = '/'.join(file_path.split('/')[:-1])
 
-    def set_algorithm(self, algorithm, sm4_key=None):
-        self.algorithm = algorithm
-        self.sm4_key = sm4_key
-        if algorithm == 'SM4' and sm4_key is not None:
-            self.sm4_crypto = sm4.CryptSM4()
-            self.sm4_crypto.set_key(sm4_key.encode(), sm4.SM4_ENCRYPT)
+        self.file_name = file_path.split("/")[-1]
+        self.folder_path = '/'.join(file_path.split('/')[:-1])
 
-    def encrypt_dataframe(self):
+    def encrypt_decrypt(self, file_info: dict):
+        self.column_indices = file_info.get('column_indices')
+        self.include_all = file_info.get('include_all')
+        self.selected_algorithm = file_info.get('selected_algorithm')
+        self.selected_mode = file_info.get('selected_mode')
+        self.key_input = file_info.get('key_input')
+        self.key_input = None if self.key_input == '' else self.key_input
+
+        self.encryption_instance = EncryptionFactory.create(
+            self.selected_algorithm, self.key_input)
+
+        if self.selected_mode == 'Encrypt':
+            encrypted_data = self._encrypt_dataframe()
+        elif self.selected_mode == 'Decrypt':
+            decrypted_data = self._decrypt_dataframe()
+
+        self.save_data(encrypted_data if self.selected_mode ==
+                       'Encrypt' else decrypted_data)
+
+    def save_data(self, output_df: pd.DataFrame):
+        if self.selected_mode == 'Encrypt':
+            output_df.to_csv(
+                f"{self.folder_path}/encrypted_{self.file_name}", index=False)
+        elif self.selected_mode == 'Decrypt':
+            output_df.to_csv(
+                f"{self.folder_path}/decrypted_{self.file_name}", index=False)
+
+    def _encrypt_dataframe(self):
         encrypted_df = self.data.copy()
-        for col in encrypted_df.columns:
-            encrypted_df[col] = encrypted_df[col].apply(
-                lambda x: self._encrypt_value(str(x)))
+        if self.include_all:
+            for col in encrypted_df:
+                encrypted_df[col] = encrypted_df[col].apply(
+                    lambda x: self.encryption_instance.encrypt(str(x)))
+        else:
+            for index in self.column_indices:
+                encrypted_df.iloc[:, index] = encrypted_df.iloc[:, index].apply(
+                    lambda x: self.encryption_instance.encrypt(str(x)))
         return encrypted_df
 
-    def decrypt_dataframe(self):
-        if self.algorithm != 'SM4':
-            raise ValueError("Decryption is only supported for SM4 algorithm")
+    def _decrypt_dataframe(self):
         decrypted_df = self.data.copy()
-        for col in decrypted_df.columns:
-            decrypted_df[col] = decrypted_df[col].apply(
-                lambda x: self._decrypt_value(x))
+        if self.include_all:
+            for col in decrypted_df:
+                decrypted_df[col] = decrypted_df[col].apply(
+                    lambda x: self.encryption_instance.decrypt(str(x)))
+        else:
+            for index in self.column_indices:
+                decrypted_df.iloc[:, index] = decrypted_df.iloc[:, index].apply(
+                    lambda x: self.encryption_instance.decrypt(str(x)))
         return decrypted_df
 
-    def _encrypt_value(self, value):
-        if self.algorithm == 'sha256':
-            return hashlib.sha256(value.encode()).hexdigest()
-        elif self.algorithm == 'md5':
-            return hashlib.md5(value.encode()).hexdigest()
-        elif self.algorithm == 'SM4':
-            return self.sm4_crypto.crypt_ecb(value.encode()).hex()
-        else:
-            raise ValueError(f"Unknown algorithm: {self.algorithm}")
 
-    def _decrypt_value(self, value):
-        if self.algorithm == 'SM4':
-            self.sm4_crypto.set_key(self.sm4_key.encode(), sm4.SM4_DECRYPT)
-            return bytes.fromhex(value).decode()
+class EncryptionFactory:
+    @staticmethod
+    def create(algorithm, key=None):
+        if algorithm == 'SHA256':
+            return SHA256Encryption()
+        elif algorithm == 'MD5':
+            return MD5Encryption()
+        elif algorithm == 'SM4':
+            return SM4Encryption(key)
         else:
-            raise ValueError(
-                f"Decryption not supported for algorithm: {self.algorithm}")
+            raise ValueError(f"未知算法: {algorithm}")
+
+
+class EncryptionAlgorithm:
+    def encrypt(self, value):
+        raise NotImplementedError
+
+    def decrypt(self, value):
+        raise NotImplementedError
+
+
+class SHA256Encryption(EncryptionAlgorithm):
+    def encrypt(self, value):
+        return hashlib.sha256(value.encode()).hexdigest()
+
+    def decrypt(self, value):
+        raise ValueError("SHA256不支持解密")
+
+
+class MD5Encryption(EncryptionAlgorithm):
+    def encrypt(self, value):
+        return hashlib.md5(value.encode()).hexdigest()
+
+    def decrypt(self, value):
+        raise ValueError("MD5不支持解密")
+
+
+class SM4Encryption(EncryptionAlgorithm):
+    def __init__(self, key):
+        if not key:
+            raise ValueError("SM4需要密钥")
+        self.key = key.encode()
+        self.sm4_crypto = sm4.CryptSM4()
+        self.sm4_crypto.set_key(key.encode(), sm4.SM4_ENCRYPT)
+
+    def encrypt(self, value):
+        encrypt_value = self.sm4_crypto.crypt_ecb(value.encode())
+        return base64.b64encode(encrypt_value).decode()
+
+    def decrypt(self, value):
+        self.sm4_crypto.set_key(self.key, sm4.SM4_DECRYPT)
+        decrypt_value = self.sm4_crypto.crypt_ecb(base64.b64decode(value))
+        return decrypt_value.decode()

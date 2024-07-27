@@ -55,8 +55,16 @@ class EncryptionTab(QWidget):
         self.algorithmRowLayout.addWidget(self.algorithm_selector)
         self.algorithmRowLayout.addItem(spacer)
         self.algorithmRowLayout.addWidget(self.mode_selector)
-
         self.mainVLayout.addLayout(self.algorithmRowLayout)
+
+        self.key_input = QLineEdit(self)
+        self.key_input.setPlaceholderText("Enter key")
+        self.key_input.setVisible(False)  # Initially invisible
+        # Assuming you're using a QVBoxLayout
+        self.mainVLayout.addWidget(self.key_input)
+        self.algorithm_selector.currentTextChanged.connect(
+            self.toggle_sm4_mode_selector)
+
         self.mainVLayout.addStretch(1)
         self.encrypt_button = QPushButton('Encrypt/Decrypt File')
         self.encrypt_button.clicked.connect(self.request_encryption_decryption)
@@ -69,7 +77,7 @@ class EncryptionTab(QWidget):
         self.setLayout(self.mainVLayout)
 
     def open_file_dialog(self):
-        print("Open file dialog")
+        print('Opening file dialog')
         options = QFileDialog.Options()
         file_filter = "CSV Files (*.csv);;Excel Files (*.xlsx *.xls)"
         self.file_path, file_type = QFileDialog.getOpenFileName(
@@ -95,18 +103,15 @@ class EncryptionTab(QWidget):
                 column_indices = list(map(int, column_indices_text.split(',')))
             except ValueError:
                 QMessageBox.warning(
-                    self, "Invalid Input", "Please enter valid column indices (e.g., 0,2,4).")
+                    self, "Invalid Input", "Please enter valid column indices (e.g., 0,1,4).")
                 return
-        if not self.file_name:
-            QMessageBox.warning(
-                self, "Missing File", "Please upload a file before requesting encryption.")
-            return
+
         data = {
-            'file_path': self.file_path,
             'column_indices': column_indices,
             'include_all': include_all,
             'selected_algorithm': selected_algorithm,
             'selected_mode': selected_mode,
+            'key_input': self.key_input.text()
         }
         self.encrypt_decrypt_requested.emit(data)
 
@@ -117,8 +122,11 @@ class EncryptionTab(QWidget):
     def toggle_sm4_mode_selector(self):
         if self.algorithm_selector.currentText() == "SM4":
             self.mode_selector.setVisible(True)
+            self.key_input.setVisible(True)
+
         else:
             self.mode_selector.setVisible(False)
+            self.key_input.setVisible(False)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
