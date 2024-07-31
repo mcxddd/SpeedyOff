@@ -1,3 +1,5 @@
+https://github.com/mcxddd/SpeedyOff
+
 # SpeedyOff
 
 SpeedyOff 是一个文档处理软件，用于导入文档，进行数据分析和处理，然后导出文档、表格、图表和报告。
