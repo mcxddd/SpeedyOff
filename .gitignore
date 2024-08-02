@@ -6,5 +6,3 @@ build/
 dist/
 *.spec
 assets/*
-
-assets/encrypted_studentinfo.csv
