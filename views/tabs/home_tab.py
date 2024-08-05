@@ -15,7 +15,7 @@ class HomeTab(QWidget):
         welcomeLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(welcomeLabel)
 
-        infoLabel = QLabel('Please select a function from the tabs above.')
+        infoLabel = QLabel('请在页面栏中选择一个功能.')
         infoLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(infoLabel)
 
@@ -30,7 +30,7 @@ class HomeTab(QWidget):
         copyrightLabel.setAlignment(Qt.AlignRight)
         bottomLayout.addWidget(copyrightLabel)
 
-        contactLabel = QLabel('Contact us: support@speedyoff.com')
+        contactLabel = QLabel('联系我:13018915961')
         contactLabel.setAlignment(Qt.AlignRight)
         bottomLayout.addWidget(contactLabel)
 

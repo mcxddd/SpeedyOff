@@ -40,6 +40,8 @@ class EncryptionPresenter(QObject):
 
             self.model.encrypt_decrypt(file_info)
 
+            # self.
+
         except Exception as e:
             self.error_occurred.emit(
                 f"加密/解密时发生错误: {str(e)}")

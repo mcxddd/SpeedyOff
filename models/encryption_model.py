@@ -2,12 +2,14 @@ import pandas as pd
 import hashlib
 from gmssl import sm4
 import base64
+import openpyxl
 
 
 class EncryptionModel:
     def __init__(self):
         self.data = None
         self.file_name = None
+        self.file_name_base = None
         self.folder_path = None
         self.selected_algorithm = None
         self.encryption_instance = None
@@ -25,9 +27,15 @@ class EncryptionModel:
         if file_path.endswith('.csv'):
             self.data = pd.read_csv(file_path)
         else:
-            self.data = pd.read_excel(file_path)
+            workbook = openpyxl.load_workbook(file_path)
+            first_sheet_name = workbook.sheetnames[0]
+            sheet = workbook[first_sheet_name]
+            data = sheet.values
+            columns = next(data)
+            self.data = pd.DataFrame(data, columns=columns)
 
         self.file_name = file_path.split("/")[-1]
+        self.file_name_base = self.file_name.rsplit('.', 1)[0]
         self.folder_path = '/'.join(file_path.split('/')[:-1])
 
     def encrypt_decrypt(self, file_info: dict):
@@ -52,10 +60,10 @@ class EncryptionModel:
     def save_data(self, output_df: pd.DataFrame):
         if self.selected_mode == 'Encrypt':
             output_df.to_csv(
-                f"{self.folder_path}/encrypted_{self.file_name}", index=False)
+                f"{self.folder_path}/已加密_{self.file_name_base}.csv", index=False)
         elif self.selected_mode == 'Decrypt':
             output_df.to_csv(
-                f"{self.folder_path}/decrypted_{self.file_name}", index=False)
+                f"{self.folder_path}/已解密_{self.file_name_base}.csv", index=False)
 
     def _encrypt_dataframe(self):
         encrypted_df = self.data.copy()
@@ -91,6 +99,8 @@ class EncryptionFactory:
             return MD5Encryption()
         elif algorithm == 'SM4':
             return SM4Encryption(key)
+        elif algorithm == 'BASE64':
+            return Base64Encryption()
         else:
             raise ValueError(f"未知算法: {algorithm}")
 
@@ -135,3 +145,11 @@ class SM4Encryption(EncryptionAlgorithm):
         self.sm4_crypto.set_key(self.key, sm4.SM4_DECRYPT)
         decrypt_value = self.sm4_crypto.crypt_ecb(base64.b64decode(value))
         return decrypt_value.decode()
+
+
+class Base64Encryption(EncryptionAlgorithm):
+    def encrypt(self, value):
+        return base64.b64encode(value.encode()).decode()
+
+    def decrypt(self, value):
+        return base64.b64decode(value).decode()

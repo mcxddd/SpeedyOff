@@ -14,9 +14,9 @@ class EncryptionTab(QWidget):
     def _initUI(self):
         self.mainVLayout = QVBoxLayout()
 
-        self.welcomeLabel = QLabel('Import your file.')
+        self.welcomeLabel = QLabel('请导入文件。')
         self.welcomeLabel.setAlignment(Qt.AlignCenter)
-        self.importButton = QPushButton("Choose")
+        self.importButton = QPushButton("选择文件")
         self.importButton.clicked.connect(self.open_file_dialog)
 
         self.importRowLayout = QHBoxLayout()
@@ -24,22 +24,22 @@ class EncryptionTab(QWidget):
         self.importRowLayout.addWidget(self.importButton)
         self.mainVLayout.addLayout(self.importRowLayout)
 
-        self.uploadfileInfo = QLabel('Not selected yet.')
+        self.uploadfileInfo = QLabel('还没选呢')
         self.uploadfileInfo.setAlignment(Qt.AlignRight)
         self.mainVLayout.addWidget(self.uploadfileInfo)
 
         self.indicesRowLayout = QHBoxLayout()
         self.column_indices_input = QLineEdit()
         self.column_indices_input.setPlaceholderText(
-            'Enter column indices (e.g., 0,2,4)')
+            '输入需要操作的列 (例如, 0,2,4)')
         self.include_all_columns = QCheckBox(
-            'Include all columns')
+            '包括所有的列')
         self.indicesRowLayout.addWidget(self.column_indices_input)
         self.indicesRowLayout.addWidget(self.include_all_columns)
         self.mainVLayout.addLayout(self.indicesRowLayout)
 
         self.algorithm_selector = QComboBox()
-        self.algorithm_selector.addItems(["SHA256", "MD5", "SM4"])
+        self.algorithm_selector.addItems(["SHA256", "MD5", "SM4", 'BASE64'])
         self.algorithm_selector.currentIndexChanged.connect(
             self.toggle_sm4_mode_selector)
 
@@ -58,7 +58,7 @@ class EncryptionTab(QWidget):
         self.mainVLayout.addLayout(self.algorithmRowLayout)
 
         self.key_input = QLineEdit(self)
-        self.key_input.setPlaceholderText("Enter key")
+        self.key_input.setPlaceholderText("输入密钥")
         self.key_input.setVisible(False)  # Initially invisible
         # Assuming you're using a QVBoxLayout
         self.mainVLayout.addWidget(self.key_input)
@@ -66,7 +66,7 @@ class EncryptionTab(QWidget):
             self.toggle_sm4_mode_selector)
 
         self.mainVLayout.addStretch(1)
-        self.encrypt_button = QPushButton('Encrypt/Decrypt File')
+        self.encrypt_button = QPushButton('加密/解密 文件')
         self.encrypt_button.clicked.connect(self.request_encryption_decryption)
 
         self.encryptionRowLayout = QHBoxLayout()
@@ -94,16 +94,18 @@ class EncryptionTab(QWidget):
 
         if not column_indices_text and not include_all:
             QMessageBox.warning(
-                self, 'Missing Values', 'Please enter column indices or check the nclude all columns to the right option.')
+                self, '缺失数值', '请输入需要操作的列或在右侧操作所有列处打勾。')
             return
 
         column_indices = []
         if column_indices_text:
             try:
                 column_indices = list(map(int, column_indices_text.split(',')))
+                column_indices = [x - 1 for x in column_indices]
+
             except ValueError:
                 QMessageBox.warning(
-                    self, "Invalid Input", "Please enter valid column indices (e.g., 0,1,4).")
+                    self, " 输入不正确", "请输入有效的列数 (e.g., 0,1,4).")
                 return
 
         data = {
@@ -117,7 +119,7 @@ class EncryptionTab(QWidget):
 
     @pyqtSlot(str)
     def update_file_info(self, file_name):
-        self.uploadfileInfo.setText(f'Selected file: {file_name}')
+        self.uploadfileInfo.setText(f'已选择的文件: {file_name}')
 
     def toggle_sm4_mode_selector(self):
         if self.algorithm_selector.currentText() == "SM4":

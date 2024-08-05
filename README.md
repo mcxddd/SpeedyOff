@@ -2,11 +2,11 @@ https://github.com/mcxddd/SpeedyOff
 
 # SpeedyOff
 
-SpeedyOff 是一个文档处理软件，用于导入文档，进行数据分析和处理，然后导出文档、表格、图表和报告。
+SpeedyOff 是一个表格处理软件，用于导入文档，进行数据分析和处理，然后导出表格、图表和报告。
 
 ## 如何打包
 
-pyinstaller -w -F -i assets/psyduck.ico main.py
+`pyinstaller -w -F --hidden-import openpyxl.cell._writer -i assets/psyduck.ico main.py`
 
 ## 功能
 
