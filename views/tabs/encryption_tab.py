@@ -140,3 +140,12 @@ class EncryptionTab(QWidget):
         sm4_mode_selector_width = parent_width * 0.25
         self.algorithm_selector.setFixedWidth(algorithm_selector_width)
         self.mode_selector.setFixedWidth(sm4_mode_selector_width)
+
+    @pyqtSlot(bool, str)
+    def show_operation_result(self, success, file_name):
+        if success:
+            QMessageBox.information(
+                self, '操作完成', f'输出文件已创建在原文件夹中: {file_name}')
+        else:
+            QMessageBox.warning(
+                self, '操作失败', '输出文件未能创建。')

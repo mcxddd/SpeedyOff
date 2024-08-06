@@ -6,6 +6,7 @@ from views.tabs.encryption_tab import EncryptionTab
 
 class EncryptionPresenter(QObject):
     error_occurred = pyqtSignal(str)
+    operation_completed = pyqtSignal(bool, str)
 
     def __init__(self, model: EncryptionModel, view: EncryptionTab):
         super().__init__()
@@ -19,6 +20,7 @@ class EncryptionPresenter(QObject):
         self.view.file_upload_requested.connect(self.handle_file_upload)
         self.view.encrypt_decrypt_requested.connect(
             self.handle_encrypt_decrypt_request)
+        self.operation_completed.connect(self.view.show_operation_result)
 
     def handle_file_upload(self, file_path: str):
         try:
@@ -38,9 +40,10 @@ class EncryptionPresenter(QObject):
                 self.error_occurred.emit(
                     "先上传文件啦.")
 
-            self.model.encrypt_decrypt(file_info)
+            output_created = self.model.encrypt_decrypt(file_info)
 
-            # self.
+            self.operation_completed.emit(
+                output_created, self.model.get_file_name())
 
         except Exception as e:
             self.error_occurred.emit(

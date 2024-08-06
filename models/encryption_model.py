@@ -13,6 +13,7 @@ class EncryptionModel:
         self.folder_path = None
         self.selected_algorithm = None
         self.encryption_instance = None
+        self.output_filename = None
 
     def get_data(self):
         return self.data
@@ -54,16 +55,20 @@ class EncryptionModel:
         elif self.selected_mode == 'Decrypt':
             decrypted_data = self._decrypt_dataframe()
 
-        self.save_data(encrypted_data if self.selected_mode ==
-                       'Encrypt' else decrypted_data)
+        output_created = self.save_data(encrypted_data if self.selected_mode ==
+                                        'Encrypt' else decrypted_data)
+        return output_created
 
     def save_data(self, output_df: pd.DataFrame):
         if self.selected_mode == 'Encrypt':
             output_df.to_csv(
                 f"{self.folder_path}/已加密_{self.file_name_base}.csv", index=False)
+            self.output_filename = f"已加密_{self.file_name_base}.csv"
         elif self.selected_mode == 'Decrypt':
             output_df.to_csv(
                 f"{self.folder_path}/已解密_{self.file_name_base}.csv", index=False)
+            self.output_filename = f"已解密_{self.file_name_base}.csv"
+        return True
 
     def _encrypt_dataframe(self):
         encrypted_df = self.data.copy()
